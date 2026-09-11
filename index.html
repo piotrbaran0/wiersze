@@ -1,925 +1,470 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ship's Wheel – Nawigacja</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080808">
+<title>Wiersze autorstwa Piotra Barana</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Roboto+Condensed:wght@400;700&display=swap');
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: linear-gradient(180deg, #0a1628 0%, #1a3a5c 40%, #0d2137 100%);
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-family: 'Roboto Condensed', sans-serif;
-    color: #e0f0ff;
-    overflow: hidden;
-    user-select: none;
-  }
-
-  .game-container {
-    width: 100%;
-    max-width: 1140px;
-    height: 100vh;
-    max-height: 860px;
-    display: grid;
-    grid-template-columns: 230px 1fr 230px;
-    grid-template-rows: 64px 1fr 100px;
-    gap: 10px;
-    padding: 12px;
-    position: relative;
-  }
-
-  /* TOP */
-  .top-bar {
-    grid-column: 1 / -1;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: rgba(0,20,40,0.9);
-    border: 2px solid #2a6a9a;
-    border-radius: 12px;
-    padding: 0 20px;
-    box-shadow: 0 0 20px rgba(0,120,200,0.3), inset 0 0 30px rgba(0,40,80,0.5);
-  }
-  .money-display {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 26px;
-    font-weight: 700;
-    color: #4dff9a;
-    text-shadow: 0 0 12px rgba(77,255,154,0.6);
-  }
-  .money-display.negative { color: #ff5c5c; text-shadow: 0 0 12px rgba(255,92,92,0.6); }
-  .title {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 20px;
-    letter-spacing: 3px;
-    color: #7ec8ff;
-  }
-  .top-right { display: flex; gap: 18px; align-items: center; font-size: 13px; color: #8ab4d0; }
-  .streak { color: #ffcc44; font-family: 'Orbitron', sans-serif; }
-
-  /* LEFT – COMPASS */
-  .left-panel {
-    background: rgba(0,15,30,0.92);
-    border: 2px solid #2a6a9a;
-    border-radius: 14px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 12px 10px;
-    box-shadow: 0 0 25px rgba(0,100,180,0.25);
-    overflow: hidden;
-  }
-  .panel-title {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 12px;
-    letter-spacing: 2px;
-    color: #5aa0d0;
-    margin-bottom: 8px;
-  }
-  .compass-wrapper { position: relative; width: 160px; height: 160px; }
-  .compass-face {
-    width: 100%; height: 100%;
-    border-radius: 50%;
-    background: radial-gradient(circle at 40% 35%, #1e4a6e, #0a1f35 70%);
-    border: 5px solid #3a7ab0;
-    box-shadow: 0 0 0 3px #1a3a55, 0 0 20px rgba(0,120,200,0.4), inset 0 0 35px rgba(0,0,0,0.6);
-    position: relative;
-  }
-  .compass-face.fog { filter: blur(4px) brightness(0.6); }
-  .compass-mark {
-    position: absolute;
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 700;
-    font-size: 16px;
-    color: #c0e0ff;
-  }
-  .compass-mark.n { top: 8px; left: 50%; transform: translateX(-50%); color: #ff6b6b; }
-  .compass-mark.e { right: 10px; top: 50%; transform: translateY(-50%); }
-  .compass-mark.s { bottom: 8px; left: 50%; transform: translateX(-50%); }
-  .compass-mark.w { left: 10px; top: 50%; transform: translateY(-50%); }
-  .compass-ring {
-    position: absolute; inset: 16px;
-    border-radius: 50%;
-    border: 1px dashed rgba(100,160,200,0.35);
-  }
-  .compass-needle {
-    position: absolute;
-    width: 5px; height: 64px;
-    left: 50%; top: 50%;
-    transform-origin: 50% 100%;
-    margin-left: -2.5px; margin-top: -64px;
-    transition: transform 0.12s linear;
-  }
-  .compass-needle::before {
-    content: '';
-    position: absolute; top: 0; left: 0;
-    width: 0; height: 0;
-    border-left: 2.5px solid transparent;
-    border-right: 2.5px solid transparent;
-    border-bottom: 50px solid #ff4040;
-  }
-  .compass-needle::after {
-    content: '';
-    position: absolute; bottom: 0; left: 0;
-    width: 0; height: 0;
-    border-left: 2.5px solid transparent;
-    border-right: 2.5px solid transparent;
-    border-top: 14px solid #ddd;
-  }
-  .compass-center {
-    position: absolute;
-    width: 14px; height: 14px;
-    background: radial-gradient(circle, #fff, #8899aa);
-    border-radius: 50%;
-    left: 50%; top: 50%;
-    transform: translate(-50%,-50%);
-    z-index: 5;
-  }
-  .heading-label { margin-top: 10px; font-size: 13px; color: #7ec8ff; }
-  .heading-value { font-family: 'Orbitron', sans-serif; font-size: 20px; color: #fff; }
-  .money-zones { margin-top: 12px; width: 100%; font-size: 11px; }
-  .zone-row {
-    display: flex; justify-content: space-between;
-    padding: 2px 5px; border-radius: 3px; margin-bottom: 2px;
-  }
-  .zone-row.good { background: rgba(0,160,70,0.28); color: #4dff9a; }
-  .zone-row.bad  { background: rgba(160,30,30,0.28); color: #ff8080; }
-
-  /* CENTER */
-  .center-panel {
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    position: relative;
-  }
-  .wheel-container { position: relative; width: 320px; height: 320px; }
-  canvas#wheel {
-    width: 100%; height: 100%;
-    cursor: grab;
-    filter: drop-shadow(0 0 16px rgba(0,100,180,0.5));
-  }
-  canvas#wheel:active { cursor: grabbing; }
-  .position-label {
-    margin-top: 10px;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 15px;
-    letter-spacing: 1px;
-    color: #7ec8ff;
-    background: rgba(0,30,60,0.75);
-    padding: 5px 16px;
-    border-radius: 18px;
-    border: 1px solid #2a6a9a;
-  }
-
-  /* Event toast */
-  .event-toast {
-    position: absolute;
-    top: 12px; left: 50%; transform: translateX(-50%);
-    background: rgba(10,30,50,0.95);
-    border: 2px solid #ffaa33;
-    border-radius: 10px;
-    padding: 10px 22px;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 14px;
-    color: #ffcc66;
-    text-align: center;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.4s;
-    z-index: 20;
-    max-width: 90%;
-    box-shadow: 0 0 25px rgba(255,170,50,0.35);
-  }
-  .event-toast.show { opacity: 1; }
-  .event-toast.bad { border-color: #ff5555; color: #ff8888; box-shadow: 0 0 25px rgba(255,80,80,0.35); }
-  .event-toast.good { border-color: #44dd88; color: #88ffbb; box-shadow: 0 0 25px rgba(50,220,120,0.35); }
-
-  /* RIGHT – ENGINE */
-  .right-panel {
-    background: rgba(0,15,30,0.92);
-    border: 2px solid #2a6a9a;
-    border-radius: 14px;
-    display: flex; flex-direction: column;
-    align-items: center;
-    padding: 12px 10px;
-    box-shadow: 0 0 25px rgba(0,100,180,0.25);
-  }
-  .engine-value {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 24px;
-    color: #ffcc44;
-  }
-  .engine-value.overheat { color: #ff4444; animation: pulse 0.6s infinite; }
-  @keyframes pulse { 50% { opacity: 0.5; } }
-  .engine-gauge {
-    position: relative;
-    width: 64px; height: 220px;
-    background: linear-gradient(to top, #1a2a3a, #0d1825);
-    border: 3px solid #3a7ab0;
-    border-radius: 10px;
-    overflow: hidden;
-    margin: 10px 0;
-    box-shadow: inset 0 0 18px rgba(0,0,0,0.7);
-  }
-  .engine-fill {
-    position: absolute; bottom: 0; left: 0; right: 0;
-    background: linear-gradient(to top, #e04000, #ffaa00 40%, #40ff60 80%);
-    transition: height 0.08s linear;
-  }
-  .engine-fill.overheat {
-    background: linear-gradient(to top, #ff0000, #ff6600 50%, #ffaa00);
-  }
-  .engine-marks {
-    position: absolute; inset: 0;
-    display: flex; flex-direction: column-reverse;
-    justify-content: space-between;
-    padding: 5px 0; pointer-events: none;
-  }
-  .engine-marks span { font-size: 9px; color: rgba(180,220,255,0.65); text-align: right; padding-right: 5px; }
-  .engine-handle {
-    position: absolute; left: -10px; right: -10px; height: 16px;
-    background: linear-gradient(180deg, #c0d8f0, #6080a0);
-    border: 2px solid #fff; border-radius: 4px;
-    cursor: ns-resize; z-index: 10;
-  }
-  .engine-info { margin-top: 8px; font-size: 11px; color: #8ab4d0; text-align: center; line-height: 1.35; }
-  .heat-bar {
-    width: 90%; height: 8px; background: #1a2a3a;
-    border-radius: 4px; margin-top: 8px; overflow: hidden;
-  }
-  .heat-fill {
-    height: 100%; width: 0%;
-    background: linear-gradient(90deg, #44aa44, #ffaa00, #ff3333);
-    transition: width 0.2s;
-  }
-
-  /* BOTTOM */
-  .bottom-bar {
-    grid-column: 1 / -1;
-    background: rgba(0,20,40,0.9);
-    border: 2px solid #2a6a9a;
-    border-radius: 12px;
-    display: flex; justify-content: space-around; align-items: center;
-    padding: 0 12px; font-size: 13px;
-  }
-  .stat-box { text-align: center; }
-  .stat-label { color: #6a9ab8; font-size: 10px; letter-spacing: 1px; }
-  .stat-value { font-family: 'Orbitron', sans-serif; font-size: 16px; color: #c0e8ff; margin-top: 1px; }
-
-  .active-events {
-    position: absolute;
-    bottom: 110px; left: 50%; transform: translateX(-50%);
-    display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
-    max-width: 80%; z-index: 15;
-  }
-  .event-chip {
-    background: rgba(20,40,70,0.9);
-    border: 1px solid #4a8ac0;
-    border-radius: 16px;
-    padding: 4px 12px;
-    font-size: 11px;
-    color: #a0d0ff;
-  }
-  .event-chip.bad { border-color: #c05050; color: #ff9999; }
-  .event-chip.good { border-color: #40a060; color: #88ffaa; }
-
-  .hint {
-    position: absolute; bottom: 4px; left: 50%;
-    transform: translateX(-50%);
-    font-size: 10px; color: rgba(150,190,220,0.45);
-  }
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+:root {
+  --bg:#070707; --bg2:#101010; --gold:#d6b36a; --gold2:#f0d89a;
+  --text:#f4f0e8; --muted:#a9a39a; --line:rgba(214,179,106,.24);
+  --card:rgba(255,255,255,.045); --shadow:0 25px 90px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:
+radial-gradient(circle at 20% 10%,rgba(214,179,106,.09),transparent 28%),
+radial-gradient(circle at 80% 70%,rgba(214,179,106,.06),transparent 30%),var(--bg);
+color:var(--text);font-family:Inter,sans-serif;overflow-x:hidden}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.13;
+background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);
+background-size:45px 45px;mask-image:linear-gradient(to bottom,black,transparent 90%)}
+a{color:inherit;text-decoration:none}
+.nav{position:fixed;top:0;left:0;right:0;z-index:50;padding:18px 6vw;display:flex;justify-content:space-between;align-items:center;
+background:linear-gradient(to bottom,rgba(7,7,7,.94),rgba(7,7,7,.5),transparent);backdrop-filter:blur(8px)}
+.brand{font-family:"Cormorant Garamond",serif;letter-spacing:.12em;font-size:20px}
+.brand span{color:var(--gold)}
+.navlinks{display:flex;gap:22px;font-size:12px;text-transform:uppercase;letter-spacing:.18em;color:var(--muted)}
+.navlinks a:hover{color:var(--gold2)}
+.hero{min-height:100vh;display:grid;place-items:center;padding:130px 6vw 80px;position:relative}
+.orb{position:absolute;width:55vw;height:55vw;max-width:800px;max-height:800px;border-radius:50%;
+border:1px solid rgba(214,179,106,.16);animation:float 8s ease-in-out infinite;box-shadow:0 0 120px rgba(214,179,106,.06) inset}
+.orb:after{content:"";position:absolute;inset:10%;border:1px solid rgba(214,179,106,.12);border-radius:50%}
+.hero-content{position:relative;text-align:center;max-width:1050px;animation:rise 1.3s ease both}
+.eyebrow{color:var(--gold);font-size:11px;letter-spacing:.42em;text-transform:uppercase;margin-bottom:25px}
+h1{font:600 clamp(52px,9vw,128px)/.83 "Cormorant Garamond",serif;letter-spacing:-.035em;margin:0;text-wrap:balance}
+h1 em{color:var(--gold);font-style:normal}
+.subtitle{max-width:620px;margin:35px auto 0;color:var(--muted);font-size:15px;line-height:1.8}
+.cta{display:inline-flex;align-items:center;gap:16px;margin-top:42px;padding:17px 26px;border:1px solid var(--gold);
+text-transform:uppercase;letter-spacing:.22em;font-size:11px;color:#0a0a0a;background:var(--gold);
+transition:.35s;box-shadow:0 0 0 rgba(214,179,106,0)}
+.cta:hover{background:transparent;color:var(--gold);box-shadow:0 0 45px rgba(214,179,106,.16);transform:translateY(-3px)}
+.section{padding:100px 6vw}
+.section-head{display:flex;justify-content:space-between;gap:30px;align-items:end;margin-bottom:45px;border-bottom:1px solid var(--line);padding-bottom:22px}
+.kicker{font-size:10px;letter-spacing:.35em;color:var(--gold);text-transform:uppercase}
+h2{font:600 clamp(42px,6vw,76px)/.9 "Cormorant Garamond",serif;margin:8px 0 0}
+.count{color:var(--muted);font-size:12px;letter-spacing:.15em}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.card{opacity:1;position:relative;min-height:250px;padding:28px;border:1px solid rgba(255,255,255,.09);background:linear-gradient(145deg,rgba(255,255,255,.065),rgba(255,255,255,.018));
+overflow:hidden;cursor:pointer;transition:.45s;display:flex;flex-direction:column;justify-content:space-between}
+.card:before{content:"";position:absolute;inset:auto -20% -70% -20%;height:170px;background:radial-gradient(circle,rgba(214,179,106,.16),transparent 65%);transition:.45s}
+.card:hover{transform:translateY(-8px);border-color:rgba(214,179,106,.55);box-shadow:var(--shadow)}
+.card:hover:before{transform:translateY(-25px)}
+.num{font:500 14px "Cormorant Garamond",serif;color:var(--gold);letter-spacing:.12em}
+.card h3{font:600 38px/.95 "Cormorant Garamond",serif;margin:25px 0 10px;max-width:90%}
+.year{color:var(--muted);font-size:10px;letter-spacing:.18em;text-transform:uppercase}
+.arrow{font-size:24px;color:var(--gold);align-self:flex-end}
+.reader{display:none;min-height:100vh;padding:130px 6vw 80px}
+.reader.active{display:block;animation:fade .5s ease}
+.reader-top{display:flex;justify-content:space-between;gap:20px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:20px}
+.back{font-size:11px;text-transform:uppercase;letter-spacing:.2em;color:var(--muted);cursor:pointer}
+.back:hover{color:var(--gold)}
+.poem-title{font:600 clamp(48px,7vw,96px)/.88 "Cormorant Garamond",serif;margin:50px 0 8px}
+.author{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--gold)}
+.poem-year{color:var(--muted);font-size:11px;margin-top:12px}
+.poem-wrap{max-width:900px;margin:65px auto 0}
+.poem{font:500 clamp(21px,2.3vw,31px)/1.65 "Cormorant Garamond",serif;white-space:pre-wrap;letter-spacing:.01em}
+.footer{padding:70px 6vw;border-top:1px solid var(--line);color:var(--muted);display:flex;justify-content:space-between;gap:20px;font-size:11px;letter-spacing:.1em}
+.reveal{opacity:1;transform:translateY(0);transition:opacity .8s,transform .8s}
+.reveal.show{opacity:1;transform:none}
+@keyframes rise{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:none}}
+@keyframes float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-18px) rotate(2deg)}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media(max-width:800px){
+ .navlinks{display:none} .nav{padding:16px 5vw}
+ .hero{padding-left:5vw;padding-right:5vw} .orb{width:95vw;height:95vw}
+ .section,.reader{padding-left:5vw;padding-right:5vw}
+ .grid{grid-template-columns:1fr} .card{min-height:210px}
+ .section-head{align-items:start;flex-direction:column}
+ .poem-wrap{margin-top:45px}
+ .poem{font-size:23px;line-height:1.7;max-height:62vh;overflow-y:auto;padding-right:18px;
+   scrollbar-width:thin;scrollbar-color:var(--gold) rgba(255,255,255,.08)}
+ .poem::-webkit-scrollbar{width:7px} .poem::-webkit-scrollbar-track{background:rgba(255,255,255,.06);border-radius:10px}
+ .poem::-webkit-scrollbar-thumb{background:linear-gradient(var(--gold2),var(--gold));border-radius:10px}
+ .footer{flex-direction:column}
+}
 </style>
 </head>
 <body>
-<div class="game-container">
-  <div class="top-bar">
-    <div class="money-display" id="money">$0.00</div>
-    <div class="title">SHIP'S WHEEL</div>
-    <div class="top-right">
-      <div>Strefy: <span id="zoneTimer">5.0</span>s</div>
-      <div class="streak">Seria: <span id="streak">0</span>s</div>
-    </div>
-  </div>
+<nav class="nav">
+  <a class="brand" href="#home">PIOTR <span>BARAN</span></a>
+  <div class="navlinks"><a href="#home">Menu</a><a href="#wiersze">Wiersze</a></div>
+</nav>
 
-  <div class="left-panel">
-    <div class="panel-title">KOMPAS</div>
-    <div class="compass-wrapper">
-      <div class="compass-face" id="compassFace">
-        <div class="compass-ring"></div>
-        <div class="compass-mark n">N</div>
-        <div class="compass-mark e">E</div>
-        <div class="compass-mark s">S</div>
-        <div class="compass-mark w">W</div>
-        <div class="compass-needle" id="needle"></div>
-        <div class="compass-center"></div>
-      </div>
-    </div>
-    <div class="heading-label">Kierunek</div>
-    <div class="heading-value" id="headingText">0°</div>
-    <div class="money-zones" id="moneyZones"></div>
+<main id="home">
+<section class="hero">
+  <div class="orb"></div>
+  <div class="hero-content">
+    <div class="eyebrow">Autorska kolekcja poezji</div>
+    <h1>Wiersze autorstwa<br><em>Piotra Barana</em></h1>
+    <p class="subtitle">Osobista kolekcja trzynastu utworów — od pierwszych zapisów z 2023 roku po najnowsze wiersze z lat 2025–2026.</p>
+    <a class="cta" href="#wiersze">Przejdź do wierszy <span>→</span></a>
   </div>
+</section>
 
-  <div class="center-panel">
-    <div class="event-toast" id="eventToast"></div>
-    <div class="wheel-container">
-      <canvas id="wheel" width="320" height="320"></canvas>
-    </div>
-    <div class="position-label" id="posLabel">CENTRE</div>
-    <div class="active-events" id="activeEvents"></div>
+<section class="section" id="wiersze">
+  <div class="section-head">
+    <div><div class="kicker">Archiwum</div><h2>Wybierz wiersz</h2></div>
+    <div class="count">13 UTWORÓW</div>
   </div>
+  <div class="grid" id="poemGrid"></div>
+</section>
+</main>
 
-  <div class="right-panel">
-    <div class="panel-title">ENGINE</div>
-    <div class="engine-value" id="enginePct">50%</div>
-    <div class="engine-gauge" id="engineGauge">
-      <div class="engine-fill" id="engineFill"></div>
-      <div class="engine-marks">
-        <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
-      </div>
-      <div class="engine-handle" id="engineHandle"></div>
-    </div>
-    <div class="engine-info" id="engineInfo">
-      Zmiana: 1.0s<br>Bonus: $0.00/s
-    </div>
-    <div style="font-size:10px;color:#8ab4d0;margin-top:6px;">PRZEGRZANIE</div>
-    <div class="heat-bar"><div class="heat-fill" id="heatFill"></div></div>
+<section class="reader" id="reader">
+  <div class="reader-top">
+    <div class="back" onclick="closePoem()">← Wróć do wszystkich wierszy</div>
+    <div class="kicker">Piotr Baran</div>
   </div>
+  <div id="readerContent"></div>
+</section>
 
-  <div class="bottom-bar">
-    <div class="stat-box">
-      <div class="stat-label">OBRÓT / s</div>
-      <div class="stat-value" id="turnRate">±0°</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-label">INTERWAŁ</div>
-      <div class="stat-value" id="interval">1.0s</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-label">DOCHÓD / s</div>
-      <div class="stat-value" id="income">$0.00</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-label">PRĄD</div>
-      <div class="stat-value" id="currentVal">0°</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-label">CZAS</div>
-      <div class="stat-value" id="playTime">0:00</div>
-    </div>
-  </div>
-</div>
-<div class="hint">Przeciągnij koło • Suwak silnika • Unikaj przegrzania i sztormów</div>
+<footer class="footer">
+  <span>WIERSZE AUTORSTWA PIOTRA BARANA</span>
+  <span>© 2023–2026</span>
+</footer>
 
 <script>
-// ========== CONFIG ==========
-const POSITIONS = [
-  { name: 'TOP LEFT',     angle: -90, turn: -28, key: 'top' },
-  { name: 'STRONG LEFT',  angle: -60, turn: -18, key: 'strong' },
-  { name: 'WEAK LEFT',    angle: -30, turn: -8,  key: 'weak' },
-  { name: 'CENTRE',       angle: 0,   turn: 0,   key: 'centre' },
-  { name: 'WEAK RIGHT',   angle: 30,  turn: 8,   key: 'weak' },
-  { name: 'STRONG RIGHT', angle: 60,  turn: 18,  key: 'strong' },
-  { name: 'TOP RIGHT',    angle: 90,  turn: 28,  key: 'top' }
-];
-const DIRS = ['N', 'E', 'S', 'W'];
+const poems = [{"number": 1, "title": "Bez tytułu", "year": "ROK 2023", "lines": ["pewnego razu byłem i nie byłem,", "nikt mnie nie chce", "dlatego się okaleczyłem.", "życie jest smutne niczym zimny wiatr", "dręczy mnie i dręczy powiew tatr.", "życie jest bez sensu, ręka mi drży,", "dlatego coraz więcej jest na niej krwi.", "ukojeniu szukać. tylko w końcu gdzie?", "bo ja umiem tylko w okaleczaniu się.", "ratunek ten jako lepszy niż nic,", "pomaga strasznie lecz dużo jest krwi,", "pochodnia ciemna zgasił ją wiatr.", "to jest znowu ten powiew tatr.", "gdy pochodnie znowu gasi wiatr,", "ręka czerwona tu krew i tam.", "życie znowu nie chce mnie.", "a życie? a życie? wykrwawia się."], "text": "pewnego razu byłem i nie byłem,
+nikt mnie nie chce
+dlatego się okaleczyłem.
+życie jest smutne niczym zimny wiatr
+dręczy mnie i dręczy powiew tatr.
+życie jest bez sensu, ręka mi drży,
+dlatego coraz więcej jest na niej krwi.
+ukojeniu szukać. tylko w końcu gdzie?
+bo ja umiem tylko w okaleczaniu się.
+ratunek ten jako lepszy niż nic,
+pomaga strasznie lecz dużo jest krwi,
+pochodnia ciemna zgasił ją wiatr.
+to jest znowu ten powiew tatr.
+gdy pochodnie znowu gasi wiatr,
+ręka czerwona tu krew i tam.
+życie znowu nie chce mnie.
+a życie? a życie? wykrwawia się."}, {"number": 2, "title": "Bez tytułu", "year": "ROK 2023", "lines": [",,wychodzę do szkoły,", "a tam straszny jest tłum.", "szary i blady jak żyletka,", "mi ,,tzum\".", "jak szary jest chodnik,", "tak moje życie jest.", "nie wiem co się dzieję,", "a głód przytłumia mnie.", "krew taka jasna,", "wręcz uszczęśliwia mnie.", "jednak boli i boli", "lecz jednak się chce.", "ja nie wiem lecz nie wiem,", "czy krew krwawi się.", "jednak wyjście bez tego,", "okalecza mnie.", "żyletka jak pięknie,", "zrzera skórę do krwi.", "tak serce wskazuje mi,", "do nieba drzwi\""], "text": ",,wychodzę do szkoły,
+a tam straszny jest tłum.
+szary i blady jak żyletka,
+mi ,,tzum\".
+jak szary jest chodnik,
+tak moje życie jest.
+nie wiem co się dzieję,
+a głód przytłumia mnie.
+krew taka jasna,
+wręcz uszczęśliwia mnie.
+jednak boli i boli
+lecz jednak się chce.
+ja nie wiem lecz nie wiem,
+czy krew krwawi się.
+jednak wyjście bez tego,
+okalecza mnie.
+żyletka jak pięknie,
+zrzera skórę do krwi.
+tak serce wskazuje mi,
+do nieba drzwi\""}, {"number": 3, "title": "Bez tytułu", "year": "ROK 2023", "lines": [",,Jak życie beznadziejne mnie lubić", "nie chce mnie, tak smutno mi jak w tę i we w", "tak mój mózg nie rozumie życia w tę tak i we w tę znowu życie dręczy mnie", "nie rozumiem dlaczego tak dzieje się że życie jest złe i złe i złe,", "bez dziewczyny oddechu mi brak tak i jak sensu życia i tak, ", "szare wspomnienia gdy było tak że dziewczyny nie było mi brak", "tak życie teraz bez sensu, jest tak. szukam dziewczyny którą pokochałbym ją jednak szare duchy krzyczą że to nie czas na tą.", "pocieszać w trudnych chwilach i spędzić te piękne by mógł jednak czuje że te myśli przejedzie pług.\""], "text": ",,Jak życie beznadziejne mnie lubić
+nie chce mnie, tak smutno mi jak w tę i we w
+tak mój mózg nie rozumie życia w tę tak i we w tę znowu życie dręczy mnie
+nie rozumiem dlaczego tak dzieje się że życie jest złe i złe i złe,
+bez dziewczyny oddechu mi brak tak i jak sensu życia i tak, 
+szare wspomnienia gdy było tak że dziewczyny nie było mi brak
+tak życie teraz bez sensu, jest tak. szukam dziewczyny którą pokochałbym ją jednak szare duchy krzyczą że to nie czas na tą.
+pocieszać w trudnych chwilach i spędzić te piękne by mógł jednak czuje że te myśli przejedzie pług.\""}, {"number": 4, "title": "Bez tytułu", "year": "ROK 2024", "lines": ["gdy zobaczyłem melsa i paru", "innych tu, znowu odzyskałem trochę", "tchu, znowu żartować się fajnie", "zachciało jednak tego nie było", "mało. za mało? za dużo? za dużo.", "skończyło mi szybko się tchu", "i znowu mi wykrwawiać się", "tu, jak w oddali pociągu widzę", "światło. tak widzę że coś", "we mnie trzasło, chciałbym być", "informatykiem, muzykiem czy technikiem lecz", "pośród pięknych porcelan jestem zwykłym", "wazonikiem. chciałbym być najwyższym", "słupem, jednak pozostanę martwym trupem.", "jak długo dziewczyny nie znajdę", "tyle czasu będę przypominać ciamajdę."], "text": "gdy zobaczyłem melsa i paru
+innych tu, znowu odzyskałem trochę
+tchu, znowu żartować się fajnie
+zachciało jednak tego nie było
+mało. za mało? za dużo? za dużo.
+skończyło mi szybko się tchu
+i znowu mi wykrwawiać się
+tu, jak w oddali pociągu widzę
+światło. tak widzę że coś
+we mnie trzasło, chciałbym być
+informatykiem, muzykiem czy technikiem lecz
+pośród pięknych porcelan jestem zwykłym
+wazonikiem. chciałbym być najwyższym
+słupem, jednak pozostanę martwym trupem.
+jak długo dziewczyny nie znajdę
+tyle czasu będę przypominać ciamajdę."}, {"number": 5, "title": "tuńczyk", "year": "ROK 2024", "lines": ["tuńczyk. tuńczyk lecz nie tuńczyk.", "kiedy tę rybę złowiłem, w magie", "świata już nie wierzyłem, złowiłem", "i wierzyć przestałem. pod siebie się zapadałem.", "w ciemnościach i tej ryby ościach.", "Galaktykach i w wędkowaniu praktykach.", "czy nauczyłem się czegoś w tym stratach?", "stałem w ogniu w latach. latach które", "przeżyłem. przeżyłem, dość fatalnie.", "wcale, nie oryginalnie. widziałem", "błąkającego się kota po ulicy, lecz i tak", "pomyślałem o tym że jak kota widziałem,", "czarny był czy biały. kawałki szkła się rozsypały.", "w głębinach morzy potwór płynie lecz", "ma światło ale i tak wyginie. to nie wojenne", "klimaty, a z tego i tak same straty.", "więc wierszu morałem, jest tuńczyk. który nie", "rybą lecz szafy regałem."], "text": "tuńczyk. tuńczyk lecz nie tuńczyk.
+kiedy tę rybę złowiłem, w magie
+świata już nie wierzyłem, złowiłem
+i wierzyć przestałem. pod siebie się zapadałem.
+w ciemnościach i tej ryby ościach.
+Galaktykach i w wędkowaniu praktykach.
+czy nauczyłem się czegoś w tym stratach?
+stałem w ogniu w latach. latach które
+przeżyłem. przeżyłem, dość fatalnie.
+wcale, nie oryginalnie. widziałem
+błąkającego się kota po ulicy, lecz i tak
+pomyślałem o tym że jak kota widziałem,
+czarny był czy biały. kawałki szkła się rozsypały.
+w głębinach morzy potwór płynie lecz
+ma światło ale i tak wyginie. to nie wojenne
+klimaty, a z tego i tak same straty.
+więc wierszu morałem, jest tuńczyk. który nie
+rybą lecz szafy regałem."}, {"number": 6, "title": "jak mogłaś", "year": "ROK 2024 / ROK 2025", "lines": ["kiedy starej szafy otworzyłem drzwi, zobaczyłem że coś we mnie tkwi, nie był to organ czy inna przestroga, - to była po prostu moja osoba, brzydki, nie fajny, nie za ciekawy lecz idealny do kopania murawy", "ale ten sam chłopak nie chciał murawy, zrobił się łzawy i płakać zaczął do potrawy, nie chciał już jeść ani nic nie robić. kochał tylko kochać lecz nie mógł nic zrobić.", "alternatywko moja, dlaczego mi to zrobiłaś, dlaczego mnie tak onieśmieliłaś, zgasiłaś mi stawiło w mym pokoju, mając pretensję do mego nastroju. ", "kiedy drzwi zauważyłem, oj chłopaku za późno już było, coś tu się toż wydarzyło, lina wisi i się kisi a z niej zwisa ciało chłopaka który nie był kwita.", "dlatego pamiętajcie drogie osoby, kto żadny fajny nie rwij mu głowy."], "text": "kiedy starej szafy otworzyłem drzwi, zobaczyłem że coś we mnie tkwi, nie był to organ czy inna przestroga, - to była po prostu moja osoba, brzydki, nie fajny, nie za ciekawy lecz idealny do kopania murawy
+ale ten sam chłopak nie chciał murawy, zrobił się łzawy i płakać zaczął do potrawy, nie chciał już jeść ani nic nie robić. kochał tylko kochać lecz nie mógł nic zrobić.
+alternatywko moja, dlaczego mi to zrobiłaś, dlaczego mnie tak onieśmieliłaś, zgasiłaś mi stawiło w mym pokoju, mając pretensję do mego nastroju. 
+kiedy drzwi zauważyłem, oj chłopaku za późno już było, coś tu się toż wydarzyło, lina wisi i się kisi a z niej zwisa ciało chłopaka który nie był kwita.
+dlatego pamiętajcie drogie osoby, kto żadny fajny nie rwij mu głowy."}, {"number": 7, "title": "grosza niewiasty", "year": "ROK 2025", "lines": ["jeno ino grosza chciałem,", "lecz gdy spojrzałem to już upadałem.", "chciałem jedynej niewiasty,", " jednak zaczęły sypać się pyły i nie wiedziałem co mi umyły,", " zmyły kolor serca zaiście", "antycznego fotela rytmu, ", "mi pozostało ino już iście, ", "waćpan wie że chciałem być rycerzem,", " skończyłem pod sklepem nad Sandomierzem, ", "jednak nici tu kupowałem, ", "tylko zebrać z chodnika umiałem.", "pomne ci to iżby,", " nie zaatakowały mnie nietoperze,", " bo ja już po prostu nie wierze - sekty, komary i kleszcze, ", "Zawżdy już pożreć me dreszcze,", " i ciało gdyby tego było iż zbytnio dało.", "wybuchy wulkanów i oweż jest mą miłością to prosto że nie zweż -", "już nigdy nie ujrzę światła,", " a gdy poraz ostatni je ujrzałem to już, ", "wiedziałem że umierałem.", "!!! pisane z listą archaizmów !!!"], "text": "jeno ino grosza chciałem,
+lecz gdy spojrzałem to już upadałem.
+chciałem jedynej niewiasty,
+ jednak zaczęły sypać się pyły i nie wiedziałem co mi umyły,
+ zmyły kolor serca zaiście
+antycznego fotela rytmu, 
+mi pozostało ino już iście, 
+waćpan wie że chciałem być rycerzem,
+ skończyłem pod sklepem nad Sandomierzem, 
+jednak nici tu kupowałem, 
+tylko zebrać z chodnika umiałem.
+pomne ci to iżby,
+ nie zaatakowały mnie nietoperze,
+ bo ja już po prostu nie wierze - sekty, komary i kleszcze, 
+Zawżdy już pożreć me dreszcze,
+ i ciało gdyby tego było iż zbytnio dało.
+wybuchy wulkanów i oweż jest mą miłością to prosto że nie zweż -
+już nigdy nie ujrzę światła,
+ a gdy poraz ostatni je ujrzałem to już, 
+wiedziałem że umierałem.
+!!! pisane z listą archaizmów !!!"}, {"number": 8, "title": "Biała śmierć", "year": "ROK 2025 / ROK 2026", "lines": ["jak mi tuż tutaj kichnęła", "pojęcia nie miałem kiedy", "to przeklęte zwierciadło ", "wszystko się pod nim zapadło ", "moja kochana białogłowa,", "to była tragedia duktowa,", "torebke złoconą ci zwiało,", "ty tu szybko, śmiało ", "a woźnica nie był owca,", "szybko, błyskawiczne, tu", "nie wiara, tylko szybkość ", "tu się rwała,", "życie mi cię odebrało ", "zabrało w pędy złe,", "na ślubny kobierec ", "już nigdy nie zaprowadzę ", "cię, moja kochana", "kochana kontaminacjo", "pięknych wrażeń, moja", "implikacjo wszystkich ", "w mym życiu zdarzeń ", "tak jak cię tu kochałem ", "lecz udowodnić tego", "nie zdołałem."], "text": "jak mi tuż tutaj kichnęła
+pojęcia nie miałem kiedy
+to przeklęte zwierciadło 
+wszystko się pod nim zapadło 
+moja kochana białogłowa,
+to była tragedia duktowa,
+torebke złoconą ci zwiało,
+ty tu szybko, śmiało 
+a woźnica nie był owca,
+szybko, błyskawiczne, tu
+nie wiara, tylko szybkość 
+tu się rwała,
+życie mi cię odebrało 
+zabrało w pędy złe,
+na ślubny kobierec 
+już nigdy nie zaprowadzę 
+cię, moja kochana
+kochana kontaminacjo
+pięknych wrażeń, moja
+implikacjo wszystkich 
+w mym życiu zdarzeń 
+tak jak cię tu kochałem 
+lecz udowodnić tego
+nie zdołałem."}, {"number": 9, "title": "czerwień ust", "year": "ROK 2026", "lines": ["ku kruków wzroku,", "łza tkwiła w szklanym oku.", "ciemna noc,", "ciemna zmora,", "obiad nie tknięty stał,", "-do wieczora.", "na tym stole,", "drewniane myśli.", "nie jeden krwawy,", "który się domyśli.", "dzbanku porcelanowy,", "jak jeszcze chciałem,", "-pić ku poranku.", "tak teraz już nie.", "równowagi zagłady,", "myśli przepadły.", "teraz już tylko,", "złotej klamki dopowiedzenia,", "złotej rudy - złotego kamienia.", "wychodzę z krzemieniem,", "w mej dłoni metal,", "rzuciłem ją kamieniem.", "ku księżycowych cieni,", "jej blada skóra się czerwieni.", "wróciłem do domu,", "z czerwoną ręką.", "czuje inny blask,", "niż ten z pod lasu,", "swoją sarenką.", "wstaję rano blisko olśnienia,", "ktoś dobija się do mego mienia.", "sygnały jasne,", "to czas niewidzenia.", "a mi tylko.", "żegnaj, żegnaj,", "a tak cię kochałem ", "pocałunków ostatnich,", "czci się domagałem."], "text": "ku kruków wzroku,
+łza tkwiła w szklanym oku.
+ciemna noc,
+ciemna zmora,
+obiad nie tknięty stał,
+-do wieczora.
+na tym stole,
+drewniane myśli.
+nie jeden krwawy,
+który się domyśli.
+dzbanku porcelanowy,
+jak jeszcze chciałem,
+-pić ku poranku.
+tak teraz już nie.
+równowagi zagłady,
+myśli przepadły.
+teraz już tylko,
+złotej klamki dopowiedzenia,
+złotej rudy - złotego kamienia.
+wychodzę z krzemieniem,
+w mej dłoni metal,
+rzuciłem ją kamieniem.
+ku księżycowych cieni,
+jej blada skóra się czerwieni.
+wróciłem do domu,
+z czerwoną ręką.
+czuje inny blask,
+niż ten z pod lasu,
+swoją sarenką.
+wstaję rano blisko olśnienia,
+ktoś dobija się do mego mienia.
+sygnały jasne,
+to czas niewidzenia.
+a mi tylko.
+żegnaj, żegnaj,
+a tak cię kochałem 
+pocałunków ostatnich,
+czci się domagałem."}, {"number": 10, "title": "Owoce leśne", "year": "ROK 2026", "lines": ["Na drewnianej kładce, ", "w pod krawatce,", "eleganckich butów,", "utknąłem w klatce,", "liści bez rzutów.", "O pomoc wołałem,", "magii orzechów,", "posmakowałem.", "Kory drzewnej,", "serca mego,", "któż za jeden,", "postawił klatkę,", "i złapał mnie - w pułapkę,", "krwionośną.", "Dzień za dzień,", "coraz mniej sił miałem.", "paradygmatu kogoś,", "potrzebowałem.", "Gałązko śliczna,", "twego piękna,", "nic nie pokona,", "o ciebie linę oplatam,", "będziesz zakrwawiona.", "Leje się, leje,", "z dzbanka miłego,", "wiśniowy syrop,", "i wnętrzności jego.", "Natury płaty,", "części odpadają,", "nikt chłopaka nie wypuścił.", "z klatki w końcu tu puścił,", "gdy klatka lecz piersiowa,", "już się nie unosiła.", "„Inna przygoda” – 11 wiersz", "W oddalonej gminie produkcja trwała, ", "gdy każdy kwadrat przychodził, ", "to wnet stalowa maszyna się rwała,", "skąd ten obiekt się wywodził,", "(mówiono do kropki). ", "Kropka bardzo chciała być kafelką,", "smutna będąc patrzyła na innych.", "Widziała, że kwadraty z jej wioski, ", "robiły to z iskrą staranności niewielką. ", "Sama bardzo się starała,", " informacje wykuwała,", "lecz wyzwaniu temu,", "podołać nie zdołała. ", "Pewnego razu ścierając troski,", "mechanik zawitał do wioski, ", "smutnej kropce dał swoje ulotki, ", "widok auta dla niej był boski. ", "Kropka za niedługą namową, ", "choć zmian czegokolwiek się bała, ", "nie chciała być jednostką losową, ", "więc szansę przyjęła i ją sobie dała. ", "Spróbowała zostać kołem, ", "znajdując swoje miejsce, ", "poczuła się własnym aniołem, ", "bardziej cieszy jedzenie nad stołem. ", "Zapisana popiołem w tej historii jest wzorem. ", "Nie trzeba być jak inni by szczęśliwym się stać."], "text": "Na drewnianej kładce, 
+w pod krawatce,
+eleganckich butów,
+utknąłem w klatce,
+liści bez rzutów.
+O pomoc wołałem,
+magii orzechów,
+posmakowałem.
+Kory drzewnej,
+serca mego,
+któż za jeden,
+postawił klatkę,
+i złapał mnie - w pułapkę,
+krwionośną.
+Dzień za dzień,
+coraz mniej sił miałem.
+paradygmatu kogoś,
+potrzebowałem.
+Gałązko śliczna,
+twego piękna,
+nic nie pokona,
+o ciebie linę oplatam,
+będziesz zakrwawiona.
+Leje się, leje,
+z dzbanka miłego,
+wiśniowy syrop,
+i wnętrzności jego.
+Natury płaty,
+części odpadają,
+nikt chłopaka nie wypuścił.
+z klatki w końcu tu puścił,
+gdy klatka lecz piersiowa,
+już się nie unosiła.
+„Inna przygoda” – 11 wiersz
+W oddalonej gminie produkcja trwała, 
+gdy każdy kwadrat przychodził, 
+to wnet stalowa maszyna się rwała,
+skąd ten obiekt się wywodził,
+(mówiono do kropki). 
+Kropka bardzo chciała być kafelką,
+smutna będąc patrzyła na innych.
+Widziała, że kwadraty z jej wioski, 
+robiły to z iskrą staranności niewielką. 
+Sama bardzo się starała,
+ informacje wykuwała,
+lecz wyzwaniu temu,
+podołać nie zdołała. 
+Pewnego razu ścierając troski,
+mechanik zawitał do wioski, 
+smutnej kropce dał swoje ulotki, 
+widok auta dla niej był boski. 
+Kropka za niedługą namową, 
+choć zmian czegokolwiek się bała, 
+nie chciała być jednostką losową, 
+więc szansę przyjęła i ją sobie dała. 
+Spróbowała zostać kołem, 
+znajdując swoje miejsce, 
+poczuła się własnym aniołem, 
+bardziej cieszy jedzenie nad stołem. 
+Zapisana popiołem w tej historii jest wzorem. 
+Nie trzeba być jak inni by szczęśliwym się stać."}, {"number": 12, "title": "Chłopak wierny wiosce", "year": "ROK 2026", "lines": ["W czci jednej drużyny,", "zadość uczyniłem,", "ja żem nie jedyny,", "szarość zbrązowiłem.", "Długo się utrzymywałem,", "z miłości do wioski,", "Serce zatrzymałem,", "osobistej jednostki.", "Zanim duch odleciał,", "honor poświęciłem,", "emblemat mój poleciał,", "już nic nie mówiłem.", "Żadnej siekiery,", "spalili w moją duszę,", "jakie to maniery,", "już jej o rękę nie poproszę.", "Bardzo do domu,", "wrócić chciałem,", "nie mówiłem nikomu,", "pod koniec zrozumiałem."], "text": "W czci jednej drużyny,
+zadość uczyniłem,
+ja żem nie jedyny,
+szarość zbrązowiłem.
+Długo się utrzymywałem,
+z miłości do wioski,
+Serce zatrzymałem,
+osobistej jednostki.
+Zanim duch odleciał,
+honor poświęciłem,
+emblemat mój poleciał,
+już nic nie mówiłem.
+Żadnej siekiery,
+spalili w moją duszę,
+jakie to maniery,
+już jej o rękę nie poproszę.
+Bardzo do domu,
+wrócić chciałem,
+nie mówiłem nikomu,
+pod koniec zrozumiałem."}, {"number": 13, "title": "Mdła konewka", "year": "ROK 2026", "lines": ["Ma wybitna drużyno,", "jak ja bardzo cię miłuje,", "świecka i stara ojczyzno,", "o honor u ciebie nocami pracuje.", "Nic mi w życiu nie jest miłe,", "ale dzięki tobie tyle już nie płaczę,", "choćbym głowę miał na pile,", "to ciebie pocałuje choć się stracę.", "Od małego chłopaka,", "jak zdrowie zatrzymać chce,", "dostanę się do nieba,", "a bić do ciebie będzie serce me.", "Pamięci tobie dałem,", "jak chcę żebyś nie zapominała,", "pamięci ci dostarczyłem,", "zanim moja zawieszka się wykrwawiała.", "Strasznie się boje,", "lecz mam ciebie przy sobie,", "czy napadną trupy moje,", "moja dusza w twojej osobie."], "text": "Ma wybitna drużyno,
+jak ja bardzo cię miłuje,
+świecka i stara ojczyzno,
+o honor u ciebie nocami pracuje.
+Nic mi w życiu nie jest miłe,
+ale dzięki tobie tyle już nie płaczę,
+choćbym głowę miał na pile,
+to ciebie pocałuje choć się stracę.
+Od małego chłopaka,
+jak zdrowie zatrzymać chce,
+dostanę się do nieba,
+a bić do ciebie będzie serce me.
+Pamięci tobie dałem,
+jak chcę żebyś nie zapominała,
+pamięci ci dostarczyłem,
+zanim moja zawieszka się wykrwawiała.
+Strasznie się boje,
+lecz mam ciebie przy sobie,
+czy napadną trupy moje,
+moja dusza w twojej osobie."}];
 
-// ========== STATE ==========
-let money = 0;
-let heading = Math.random() * 360;
-let wheelAngle = 0;
-let targetWheelAngle = 0;
-let currentPos = 3;
-let engine = 50;
-let targetEngine = 50;
-let turnRate = 0;
-let changeInterval = 1.0;
-let engineBonus = 0;
+const grid = document.getElementById('poemGrid');
+const reader = document.getElementById('reader');
+const main = document.querySelector('main');
+const readerContent = document.getElementById('readerContent');
 
-let moneyZones = {};
-let zoneTimer = 5;
-let lastChangeTime = 0;
-let lastZoneTime = 0;
-let lastEngineDrift = 0;
-let playStart = Date.now();
-
-let heat = 0;               // 0-100 overheat
-let profitableStreak = 0;   // seconds in good zone
-let currentDrift = 0;       // persistent current in degrees per change
-let fogUntil = 0;
-let stormUntil = 0;
-let windBoost = 0;          // extra turn multiplier
-let treasureUntil = 0;
-let leakUntil = 0;          // money drain
-let activeEventList = [];
-
-let isDraggingWheel = false;
-let isDraggingEngine = false;
-
-// ========== CANVAS ==========
-const canvas = document.getElementById('wheel');
-const ctx = canvas.getContext('2d');
-
-function drawWheel(angleDeg) {
-  const w = canvas.width, h = canvas.height;
-  const cx = w/2, cy = h/2, r = 140;
-  ctx.clearRect(0,0,w,h);
-
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI*2);
-  ctx.fillStyle = '#1a3048';
-  ctx.fill();
-  ctx.lineWidth = 12;
-  ctx.strokeStyle = stormUntil > Date.now()/1000 ? '#aa4444' : '#3a6a90';
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.arc(cx, cy, r-16, 0, Math.PI*2);
-  ctx.lineWidth = 20;
-  ctx.strokeStyle = '#5c3a22';
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.arc(cx, cy, r-26, 0, Math.PI*2);
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = '#8b5a2b';
-  ctx.stroke();
-
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate(angleDeg * Math.PI/180);
-
-  for (let i = 0; i < 8; i++) {
-    ctx.save();
-    ctx.rotate(i * Math.PI/4);
-    ctx.fillStyle = '#6b4423';
-    ctx.fillRect(-7, -r+18, 14, r-36);
-    ctx.beginPath();
-    ctx.arc(0, -r+6, 12, 0, Math.PI*2);
-    ctx.fillStyle = '#4a2e18';
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(0, -r+6, 8, 0, Math.PI*2);
-    ctx.fillStyle = '#8b5a2b';
-    ctx.fill();
-    ctx.restore();
-  }
-
-  ctx.beginPath();
-  ctx.arc(0, 0, 24, 0, Math.PI*2);
-  ctx.fillStyle = '#2a4a6a';
-  ctx.fill();
-  ctx.lineWidth = 4;
-  ctx.strokeStyle = '#7ec8ff';
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(0, 0, 12, 0, Math.PI*2);
-  ctx.fillStyle = '#1a3048';
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.moveTo(0, -32);
-  ctx.lineTo(-9, -15);
-  ctx.lineTo(9, -15);
-  ctx.closePath();
-  ctx.fillStyle = '#ff5050';
-  ctx.fill();
-  ctx.restore();
-
-  const labels = ['TL','SL','WL','C','WR','SR','TR'];
-  for (let i = 0; i < 7; i++) {
-    const a = (POSITIONS[i].angle - 90) * Math.PI/180;
-    const x = cx + Math.cos(a) * (r + 20);
-    const y = cy + Math.sin(a) * (r + 20);
-    ctx.font = '10px Orbitron';
-    ctx.fillStyle = i === currentPos ? '#4dff9a' : '#5a8ab0';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(labels[i], x, y);
-  }
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
-// ========== HELPERS ==========
-function normalizeAngle(a) {
-  a %= 360;
-  if (a < 0) a += 360;
-  return a;
-}
-function headingToDir(h) {
-  const n = normalizeAngle(h);
-  if (n >= 315 || n < 45) return 'N';
-  if (n < 135) return 'E';
-  if (n < 225) return 'S';
-  return 'W';
-}
-function snapToPosition(angle) {
-  let best = 3, bestDist = 999;
-  for (let i = 0; i < POSITIONS.length; i++) {
-    const d = Math.abs(angle - POSITIONS[i].angle);
-    if (d < bestDist) { bestDist = d; best = i; }
-  }
-  return best;
-}
-function getEngineParams(pct) {
-  // Harder economy: weaker bonuses
-  let bonus, interval;
-  if (pct <= 12.5) {
-    const t = pct / 12.5;
-    bonus = 0.55 - t * 0.20;
-    interval = 9 - t * 5;
-  } else if (pct <= 25) {
-    const t = (pct - 12.5) / 12.5;
-    bonus = 0.35 - t * 0.20;
-    interval = 4 - t * 1.5;
-  } else if (pct <= 50) {
-    const t = (pct - 25) / 25;
-    bonus = 0.15 - t * 0.25;
-    interval = 2.5 - t * 1.3;
-  } else {
-    const t = (pct - 50) / 50;
-    bonus = -0.10 - t * 0.35;   // high engine costs more
-    interval = 1.2 - t * 0.7;
-  }
-  return { bonus, interval: Math.max(0.35, interval) };
-}
+poems.forEach(function(p, i) {
+  const card = document.createElement('article');
+  card.className = 'card reveal';
+  card.setAttribute('role', 'button');
+  card.setAttribute('tabindex', '0');
+  card.innerHTML =
+    '<div><div class="num">WIERSZ ' + String(p.number).padStart(2, '0') + '</div>' +
+    '<h3>' + escapeHtml(p.title) + '</h3>' +
+    '<div class="year">' + escapeHtml(p.year) + '</div></div>' +
+    '<div class="arrow">↗</div>';
 
-// ========== ZONES (harder) ==========
-function randomizeZones() {
-  const type = Math.floor(Math.random() * 4);
-  const rates = {};
-  const shuffled = [...DIRS].sort(() => Math.random() - 0.5);
-
-  if (type === 0) {
-    // 1 good +1.5, 1 medium +0.4, 2 bad
-    rates[shuffled[0]] = 1.5;
-    rates[shuffled[1]] = 0.4;
-    rates[shuffled[2]] = -0.8;
-    rates[shuffled[3]] = -1.2;
-  } else if (type === 1) {
-    // 2 medium +0.8, 2 bad
-    rates[shuffled[0]] = 0.9;
-    rates[shuffled[1]] = 0.7;
-    rates[shuffled[2]] = -0.6;
-    rates[shuffled[3]] = -1.0;
-  } else if (type === 2) {
-    // classic-ish but weaker: 1 best +2, 2 weak +, 1 strong -
-    rates[shuffled[0]] = 2.0;
-    rates[shuffled[1]] = 0.5;
-    rates[shuffled[2]] = 0.3;
-    const opp = {N:'S',S:'N',E:'W',W:'E'}[shuffled[0]];
-    rates[opp] = -1.5;
-    for (const d of DIRS) if (!(d in rates)) rates[d] = 0.3;
-  } else {
-    // 3 weak positive, 1 strong negative
-    rates[shuffled[0]] = 0.7;
-    rates[shuffled[1]] = 0.6;
-    rates[shuffled[2]] = 0.5;
-    rates[shuffled[3]] = -1.4;
-  }
-  moneyZones = rates;
-  updateZonesUI();
-}
-function updateZonesUI() {
-  const el = document.getElementById('moneyZones');
-  el.innerHTML = DIRS.map(d => {
-    const r = moneyZones[d] || 0;
-    const cls = r > 0 ? 'good' : 'bad';
-    return `<div class="zone-row ${cls}"><span>${d}</span><span>${r > 0 ? '+' : ''}${r.toFixed(1)}$/s</span></div>`;
-  }).join('');
-}
-
-// ========== EVENTS ==========
-const EVENT_DEFS = [
-  {
-    id: 'storm',
-    name: 'SZTORM',
-    weight: 18,
-    duration: [8, 16],
-    bad: true,
-    apply() {
-      stormUntil = Date.now()/1000 + this.dur;
-      showToast('SZTORM! Silny dryf kursu', true);
+  card.addEventListener('click', function() { openPoem(i); });
+  card.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openPoem(i);
     }
-  },
-  {
-    id: 'fog',
-    name: 'MGŁA',
-    weight: 14,
-    duration: [6, 12],
-    bad: true,
-    apply() {
-      fogUntil = Date.now()/1000 + this.dur;
-      document.getElementById('compassFace').classList.add('fog');
-      showToast('MGŁA – kompas niewyraźny', true);
-    },
-    end() {
-      document.getElementById('compassFace').classList.remove('fog');
-    }
-  },
-  {
-    id: 'current',
-    name: 'PRĄD MORSKI',
-    weight: 20,
-    duration: [12, 22],
-    bad: false,
-    apply() {
-      currentDrift = (Math.random() < 0.5 ? -1 : 1) * (6 + Math.random()*10);
-      showToast(`PRĄD MORSKI ${currentDrift > 0 ? '+' : ''}${currentDrift.toFixed(0)}°`, false);
-    },
-    end() { currentDrift = 0; }
-  },
-  {
-    id: 'wind',
-    name: 'SPRZYJAJĄCY WIATR',
-    weight: 12,
-    duration: [7, 14],
-    bad: false,
-    apply() {
-      windBoost = 1.35;
-      showToast('SPRZYJAJĄCY WIATR – szybsze manewry', false);
-    },
-    end() { windBoost = 0; }
-  },
-  {
-    id: 'leak',
-    name: 'PRZECIEK',
-    weight: 15,
-    duration: [8, 15],
-    bad: true,
-    apply() {
-      leakUntil = Date.now()/1000 + this.dur;
-      showToast('PRZECIEK KADŁUBA! –0.6$/s', true);
-    }
-  },
-  {
-    id: 'treasure',
-    name: 'SZLAK HANDLOWY',
-    weight: 10,
-    duration: [5, 10],
-    bad: false,
-    apply() {
-      treasureUntil = Date.now()/1000 + this.dur;
-      showToast('SZLAK HANDLOWY – bonus +1.2$/s', false);
-    }
-  },
-  {
-    id: 'engineGlitch',
-    name: 'AWARIA SILNIKA',
-    weight: 11,
-    duration: [5, 9],
-    bad: true,
-    apply() {
-      targetEngine = Math.max(0, targetEngine - 25 - Math.random()*20);
-      heat += 25;
-      showToast('AWARIA SILNIKA – spadek mocy', true);
-    }
-  },
-  {
-    id: 'calm',
-    name: 'CISZA MORSKA',
-    weight: 10,
-    duration: [6, 11],
-    bad: false,
-    apply() {
-      // temporarily reduces negative zones impact via flag
-      showToast('CISZA – stabilniejszy kurs', false);
-    }
-  }
-];
-
-let nextEventAt = 8 + Math.random()*10;
-let runningEvents = {};
-
-function showToast(msg, isBad) {
-  const t = document.getElementById('eventToast');
-  t.textContent = msg;
-  t.className = 'event-toast show ' + (isBad ? 'bad' : 'good');
-  setTimeout(() => t.classList.remove('show'), 3200);
-}
-
-function trySpawnEvent(now) {
-  if (now < nextEventAt) return;
-  nextEventAt = now + 9 + Math.random()*14;
-
-  // weighted pick
-  const totalW = EVENT_DEFS.reduce((s,e) => s + e.weight, 0);
-  let r = Math.random() * totalW;
-  let chosen = EVENT_DEFS[0];
-  for (const e of EVENT_DEFS) {
-    r -= e.weight;
-    if (r <= 0) { chosen = e; break; }
-  }
-  // don't stack same
-  if (runningEvents[chosen.id]) return;
-
-  const dur = chosen.duration[0] + Math.random()*(chosen.duration[1]-chosen.duration[0]);
-  chosen.dur = dur;
-  chosen.apply();
-  runningEvents[chosen.id] = { end: now + dur, def: chosen };
-}
-
-function updateEvents(now) {
-  for (const id of Object.keys(runningEvents)) {
-    if (now >= runningEvents[id].end) {
-      if (runningEvents[id].def.end) runningEvents[id].def.end();
-      delete runningEvents[id];
-    }
-  }
-  // cleanup timed flags
-  if (fogUntil && now > fogUntil) {
-    fogUntil = 0;
-    document.getElementById('compassFace').classList.remove('fog');
-  }
-  if (stormUntil && now > stormUntil) stormUntil = 0;
-  if (treasureUntil && now > treasureUntil) treasureUntil = 0;
-  if (leakUntil && now > leakUntil) leakUntil = 0;
-
-  // chips
-  const chips = [];
-  if (stormUntil > now) chips.push({t:`SZTORM ${Math.ceil(stormUntil-now)}s`, bad:true});
-  if (fogUntil > now) chips.push({t:`MGŁA ${Math.ceil(fogUntil-now)}s`, bad:true});
-  if (leakUntil > now) chips.push({t:`PRZECIEK ${Math.ceil(leakUntil-now)}s`, bad:true});
-  if (treasureUntil > now) chips.push({t:`SZLAK +1.2$ ${Math.ceil(treasureUntil-now)}s`, bad:false});
-  if (windBoost) chips.push({t:'WIATR ×1.35', bad:false});
-  if (Math.abs(currentDrift) > 0.1) chips.push({t:`PRĄD ${currentDrift>0?'+':''}${currentDrift.toFixed(0)}°`, bad:false});
-  document.getElementById('activeEvents').innerHTML = chips.map(c =>
-    `<div class="event-chip ${c.bad?'bad':'good'}">${c.t}</div>`
-  ).join('');
-}
-
-// ========== INPUT ==========
-canvas.addEventListener('mousedown', () => { isDraggingWheel = true; canvas.style.cursor = 'grabbing'; });
-window.addEventListener('mouseup', () => { isDraggingWheel = false; isDraggingEngine = false; canvas.style.cursor = 'grab'; });
-window.addEventListener('mousemove', e => {
-  if (isDraggingWheel) {
-    const rect = canvas.getBoundingClientRect();
-    const cx = rect.left + rect.width/2;
-    const cy = rect.top + rect.height/2;
-    let ang = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI + 90;
-    if (ang > 180) ang -= 360;
-    ang = Math.max(-90, Math.min(90, ang));
-    targetWheelAngle = ang;
-  }
-  if (isDraggingEngine) {
-    const gauge = document.getElementById('engineGauge');
-    const rect = gauge.getBoundingClientRect();
-    let pct = 100 - ((e.clientY - rect.top) / rect.height) * 100;
-    targetEngine = Math.max(0, Math.min(100, pct));
-  }
-});
-document.getElementById('engineHandle').addEventListener('mousedown', e => { e.stopPropagation(); isDraggingEngine = true; });
-document.getElementById('engineGauge').addEventListener('mousedown', e => {
-  isDraggingEngine = true;
-  const rect = e.currentTarget.getBoundingClientRect();
-  targetEngine = Math.max(0, Math.min(100, 100 - ((e.clientY - rect.top)/rect.height)*100));
+  });
+  grid.appendChild(card);
 });
 
-// ========== GAME LOOP ==========
-function update(dt) {
-  const now = Date.now() / 1000;
+function openPoem(i) {
+  const p = poems[i];
+  main.style.display = 'none';
+  reader.classList.add('active');
 
-  // Wheel smooth (10s full range)
-  const maxWheelSpeed = 18;
-  const wheelDiff = targetWheelAngle - wheelAngle;
-  if (Math.abs(wheelDiff) > 0.15) {
-    wheelAngle += Math.sign(wheelDiff) * Math.min(Math.abs(wheelDiff), maxWheelSpeed * dt);
-  } else wheelAngle = targetWheelAngle;
+  readerContent.innerHTML =
+    '<div class="poem-title">' + escapeHtml(p.title) + '</div>' +
+    '<div class="author">— Piotr Baran</div>' +
+    '<div class="poem-year">' + escapeHtml(p.year) +
+    ' · Wiersz ' + p.number + '</div>' +
+    '<div class="poem-wrap"><div class="poem">' +
+    escapeHtml(p.text) + '</div></div>';
 
-  currentPos = snapToPosition(wheelAngle);
-  const pos = POSITIONS[currentPos];
-  turnRate = pos.turn * (windBoost || 1);
-
-  // Engine smooth (8s full)
-  const maxEngSpeed = 12.5;
-  const engDiff = targetEngine - engine;
-  if (Math.abs(engDiff) > 0.08) {
-    engine += Math.sign(engDiff) * Math.min(Math.abs(engDiff), maxEngSpeed * dt);
-  } else engine = targetEngine;
-
-  // Drift every 4s
-  if (now - lastEngineDrift > 4) {
-    lastEngineDrift = now;
-    targetEngine = Math.max(0, Math.min(100, targetEngine + (Math.random()<0.5?-10:10)));
-  }
-
-  // Heat
-  if (engine > 70) heat = Math.min(100, heat + (engine-70)*0.35*dt);
-  else heat = Math.max(0, heat - 8*dt);
-  if (heat >= 95) {
-    // force down
-    targetEngine = Math.min(targetEngine, 40);
-    engine = Math.min(engine, 45);
-    money -= 0.4 * dt; // damage cost
-  }
-
-  const engParams = getEngineParams(engine);
-  changeInterval = engParams.interval;
-  engineBonus = engParams.bonus;
-
-  // Storm makes interval shorter + extra random turn
-  if (stormUntil > now) {
-    changeInterval *= 0.55;
-  }
-
-  // Heading updates
-  if (now - lastChangeTime >= changeInterval) {
-    lastChangeTime = now;
-    let delta = 0;
-    if (pos.key === 'centre') {
-      delta = (Math.random()<0.5?-4:4);
-    } else {
-      delta = turnRate;
-    }
-    // current + storm chaos
-    delta += currentDrift * 0.35;
-    if (stormUntil > now) delta += (Math.random()-0.5)*22;
-    if (runningEvents['calm']) delta *= 0.4;
-    heading = normalizeAngle(heading + delta);
-  }
-
-  // Zones
-  if (now - lastZoneTime >= 5) {
-    lastZoneTime = now;
-    randomizeZones();
-  }
-  zoneTimer = 5 - (now - lastZoneTime);
-
-  // Events
-  trySpawnEvent(now);
-  updateEvents(now);
-
-  // Money
-  const dir = headingToDir(heading);
-  let zoneRate = moneyZones[dir] || 0;
-  let totalRate = zoneRate + engineBonus;
-
-  // upkeep – always a small cost
-  totalRate -= 0.18;
-
-  if (treasureUntil > now) totalRate += 1.2;
-  if (leakUntil > now) totalRate -= 0.6;
-
-  // streak bonus (hard to keep)
-  if (zoneRate > 0) {
-    profitableStreak += dt;
-    if (profitableStreak > 8) totalRate += Math.min(0.6, (profitableStreak-8)*0.04);
-  } else {
-    profitableStreak = 0;
-  }
-
-  money += totalRate * dt;
-
-  updateUI(totalRate, dir);
-  drawWheel(wheelAngle);
+  window.scrollTo(0, 0);
+  history.replaceState(null, '', '#wiersz-' + p.number);
 }
 
-function updateUI(totalRate, dir) {
-  const moneyEl = document.getElementById('money');
-  moneyEl.textContent = (money>=0?'$':'-$') + Math.abs(money).toFixed(2);
-  moneyEl.className = 'money-display' + (money<0?' negative':'');
-
-  document.getElementById('needle').style.transform = `rotate(${heading}deg)`;
-  document.getElementById('headingText').textContent = Math.round(heading) + '°  ' + dir;
-  document.getElementById('posLabel').textContent = POSITIONS[currentPos].name;
-
-  const engEl = document.getElementById('enginePct');
-  engEl.textContent = Math.round(engine) + '%';
-  engEl.className = 'engine-value' + (heat>80?' overheat':'');
-  document.getElementById('engineFill').style.height = engine + '%';
-  document.getElementById('engineFill').className = 'engine-fill' + (heat>80?' overheat':'');
-  document.getElementById('engineHandle').style.bottom = `calc(${engine}% - 8px)`;
-  document.getElementById('heatFill').style.width = heat + '%';
-
-  document.getElementById('engineInfo').innerHTML =
-    `Zmiana: ${changeInterval.toFixed(1)}s<br>Bonus: ${engineBonus>=0?'+':''}${engineBonus.toFixed(2)}$/s`;
-
-  document.getElementById('turnRate').textContent = (turnRate>0?'+':'') + turnRate.toFixed(0) + '°';
-  document.getElementById('interval').textContent = changeInterval.toFixed(1)+'s';
-  document.getElementById('income').textContent = (totalRate>=0?'+$':'-$') + Math.abs(totalRate).toFixed(2);
-  document.getElementById('zoneTimer').textContent = zoneTimer.toFixed(1);
-  document.getElementById('streak').textContent = Math.floor(profitableStreak);
-  document.getElementById('currentVal').textContent = (currentDrift>0?'+':'') + currentDrift.toFixed(0) + '°';
-
-  const elapsed = Math.floor((Date.now()-playStart)/1000);
-  document.getElementById('playTime').textContent =
-    Math.floor(elapsed/60) + ':' + String(elapsed%60).padStart(2,'0');
+function closePoem() {
+  reader.classList.remove('active');
+  main.style.display = '';
+  history.replaceState(null, '', '#wiersze');
+  document.getElementById('wiersze').scrollIntoView({behavior: 'smooth'});
 }
 
-// INIT
-randomizeZones();
-drawWheel(0);
-let lastTs = performance.now();
-function loop(ts) {
-  const dt = Math.min(0.05, (ts-lastTs)/1000);
-  lastTs = ts;
-  update(dt);
-  requestAnimationFrame(loop);
-}
-requestAnimationFrame(loop);
-</script>
+const io = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) {
+    if (e.isIntersecting) e.target.classList.add('show');
+  });
+}, {threshold: 0.12});
+
+document.querySelectorAll('.reveal').forEach(function(e) { io.observe(e); });
+
+window.addEventListener('hashchange', function() {
+  const match = location.hash.match(/^#wiersz-(\d+)$/);
+  if (match) {
+    const index = poems.findIndex(function(p) { return String(p.number) === match[1]; });
+    if (index !== -1) openPoem(index);
+  }
+});
+
+document.querySelector('.cta').addEventListener('click', function() {
+  setTimeout(function() {
+    document.querySelectorAll('.reveal').forEach(function(e) { io.observe(e); });
+  }, 100);
+});
+</script></script>
 </body>
 </html>
